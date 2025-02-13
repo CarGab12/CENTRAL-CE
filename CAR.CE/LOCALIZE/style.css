@@ -1,0 +1,69 @@
+
+
+#filter-input {
+    margin-bottom: 20px;
+}
+header{
+    background-color:#007BFF ;
+    color: white;
+    padding: 10px;
+    margin: 0;
+    text-align: center;
+}
+footer{
+    background-color: #007BFF;
+    color: aliceblue;   
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+}
+footer p {
+    margin: 0;
+    font-size: 14px;
+}
+main{
+    margin-bottom: 150px;
+    margin-top: 100px;
+}
+.modal-dialog {
+    max-width: 90% !important;
+    width: 80% !important;
+    margin: 30px auto !important;
+}
+
+.modal-content {
+    padding: 20px !important;
+    border-radius: 10px !important;
+}
+
+.modal-header {
+    background-color: #007bff !important;
+    color: white !important;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.modal-body {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+}
+
+.modal-footer {
+    border-top: none !important;
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.copy-email {
+    color: blue; 
+    cursor: pointer; 
+    text-decoration: underline; 
+}
+
+.copy-email:hover {
+    background-color: #f0f8ff; 
+}

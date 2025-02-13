@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Comparação de Mapas e Notas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>PRO.CÊ.VÊ - NOTAS ADM E GEM</h1>
+    </header>
+    <main>
+        <div class="container">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="aba1-tab" data-bs-toggle="tab" href="#aba1" role="tab" aria-controls="aba1" aria-selected="true">Admin - Adicionar Dados</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="aba2-tab" data-bs-toggle="tab" href="#aba2" role="tab" aria-controls="aba2" aria-selected="false">GEM - Comparar</a>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="aba1" role="tabpanel" aria-labelledby="aba1-tab">
+                    <div class="table-container">
+                        <h4>Adicionar Mapas, Notas e Transportadoras (Admin)</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <textarea id="inputAba1Mapas" class="form-control" rows="6" placeholder="Cole os Nomes dos Mapas do Admin aqui."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <textarea id="inputAba1Notas" class="form-control" rows="6" placeholder="Cole os Números das Notas do Admin aqui."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <textarea id="inputAba1Transportadoras" class="form-control" rows="6" placeholder="Cole as Transportadoras da Admin aqui."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="aba2" role="tabpanel" aria-labelledby="aba2-tab">
+                    <div class="table-container">
+                        <h4>Adicionar Mapas, Notas e Situação (GEM)</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <textarea id="inputAba2Mapas" class="form-control" rows="6" placeholder="Cole os Nomes dos Mapas do GEM aqui."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <textarea id="inputAba2Notas" class="form-control" rows="6" placeholder="Cole os Números das Notas do GEM aqui."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <textarea id="inputAba2Situacao" class="form-control" rows="6" placeholder="Cole a Situação dos Mapas do GEM aqui."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row custom-alert">
+                    <div class="row custom-alert">
+                        <div class="col-md-6">
+                            <button class="btn btn-success" id="compareBtn">Comparar</button>
+                        </div>
+                    </div>
+                    <div class="row custom-alert">
+                        <div class="col-md-6">
+                            <button class="btn btn-success btn-block" id="exportMapasBtn">Exportar Mapas Não Encontrados</button>
+                        </div>
+                    </div>
+                    <div class="row custom-alert">
+                        <div class="col-md-6">
+                            <button class="btn btn-success btn-block" id="exportNotasBtn">Exportar Notas Abertas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info" id="feedback" style="display: none;"></div>
+            <div id="resultado1" class="result-table">
+                <h4>Resultado 1 - Mapas Não Encontrados no GEM</h4>
+                <table class="table table-bordered" id="resultTable1">
+                    <thead>
+                        <tr>
+                            <th>Nome do Mapa</th>
+                            <th>Transportadora</th>
+                            <th>Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody1"></tbody>
+                </table>
+            </div>
+            <div id="resultado2" class="result-table">
+                <h4>Resultado 2 - Notas e Mapas com Situação "Aberto"</h4>
+                <table class="table table-bordered" id="resultTable2">
+                    <thead>
+                        <tr>
+                            <th>Nota</th>
+                            <th>Mapa</th>
+                            <th>Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody2"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>Feito pelo Carlos</p>
+        <p>O mesmo que está na sua frente ou do seu lado</p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function validateFields(fields) {
+            let valid = true;
+            fields.forEach(field => {
+                const element = document.getElementById(field);
+                if (!element.value.trim()) {
+                    element.classList.add('error');
+                    valid = false;
+                } else {
+                    element.classList.remove('error');
+                }
+            });
+            return valid;
+        }
+        function processDataMapasNotas(mapasId, transportadorasId, notasId) {
+            const mapas = document.getElementById(mapasId).value.trim().split("\n").map(row => row.trim());
+            const transportadoras = document.getElementById(transportadorasId).value.trim().split("\n").map(row => row.trim());
+            const notas = document.getElementById(notasId).value.trim().split("\n").map(row => row.trim());
+            return mapas.map((mapa, i) => ({
+                mapa,
+                transportadora: transportadoras[i] || "",
+                nota: notas[i] || ""
+            })).filter(row => row.mapa);
+        }
+        function processDataAba2(mapasId, notasId, situacaoId) {
+            const mapas = document.getElementById(mapasId).value.trim().split("\n").map(row => row.trim());
+            const notas = document.getElementById(notasId).value.trim().split("\n").map(row => row.trim());
+            const situacoes = document.getElementById(situacaoId).value.trim().split("\n").map(row => row.trim());
+            return mapas.map((mapa, i) => ({
+                mapa,
+                nota: notas[i] || "",
+                situacao: situacoes[i] || ""
+            })).filter(row => row.mapa);
+        }
+        function downloadXLSX(data, filename) {
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+            XLSX.writeFile(workbook, filename);
+        }
+        $('#compareBtn').click(() => {
+            const fields = ['inputAba1Mapas', 'inputAba1Notas', 'inputAba1Transportadoras', 'inputAba2Mapas', 'inputAba2Notas', 'inputAba2Situacao'];
+
+            if (!validateFields(fields)) {
+                $('#feedback').text('Por favor, preencha todos os campos necessários!').show();
+                return;
+            }
+            const aba1Data = processDataMapasNotas('inputAba1Mapas', 'inputAba1Transportadoras', 'inputAba1Notas');
+            const aba2Data = processDataAba2('inputAba2Mapas', 'inputAba2Notas', 'inputAba2Situacao');
+            resultadoMapas = [];
+            resultadoNotasAbertas = [];
+            const mapasVerificados = new Set();
+            aba1Data.forEach(row1 => {
+                if (!mapasVerificados.has(row1.mapa)) {
+                    const row2 = aba2Data.find(row2 => row2.mapa === row1.mapa);
+                    if (!row2) {
+                        resultadoMapas.push({ mapa: row1.mapa, transportadora: row1.transportadora, situacao: "Não Encontrado" });
+                    }
+                    mapasVerificados.add(row1.mapa);
+                }
+            });
+            resultadoNotasAbertas = aba2Data.filter(row => row.situacao === "Aberto");
+            $('#resultBody1').html(resultadoMapas.map(row => `
+                <tr>
+                    <td>${row.mapa}</td>
+                    <td>${row.transportadora}</td>
+                    <td>${row.situacao}</td>
+                </tr>
+            `).join(''));
+            $('#resultBody2').html(resultadoNotasAbertas.map(row => `
+                <tr>
+                    <td>${row.nota}</td>
+                    <td>${row.mapa}</td>
+                    <td>${row.situacao}</td>
+                </tr>
+            `).join(''));
+            $('#resultado1').toggleClass('active', resultadoMapas.length > 0);
+            $('#resultado2').toggleClass('active', resultadoNotasAbertas.length > 0);
+
+            $('#feedback').text('Comparação realizada com sucesso!').show();
+        });
+
+        $('#exportMapasBtn').click(() => {
+            if (resultadoMapas.length === 0) {
+                alert('Nenhum dado para exportar!');
+                return;
+            }
+            downloadXLSX(resultadoMapas, 'mapas_nao_encontrados.xlsx');
+        });
+
+        $('#exportNotasBtn').click(() => {
+            if (resultadoNotasAbertas.length === 0) {
+                alert('Nenhum dado para exportar!');
+                return;
+            }
+            downloadXLSX(resultadoNotasAbertas, 'notas_abertas.xlsx');
+        });
+    </script>
+</body>
+</html>

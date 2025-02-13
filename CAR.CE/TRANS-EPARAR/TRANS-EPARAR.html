@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Separador de Planilhas</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1 class="text-center mb-4">Separador de Planilhas por Transportadora</h1>
+    </header>
+    <div class="container mt-5">
+        <div class="mb-3">
+            <label for="fileInput" class="form-label">Carregar Planilha</label>
+            <input type="file" id="fileInput" class="form-control" accept=".xlsx, .xls">
+        </div>
+        <button class="btn btn-primary" onclick="processFile()">Processar</button>
+    </div>
+
+    <footer>
+        <p>Feito pelo Carlos</p>
+        <p>O mesmo que está na sua frente ou do seu lado</p>
+    </footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        function processFile() {
+            const input = document.getElementById('fileInput');
+            if (!input.files.length) {
+                alert("Por favor, carregue um arquivo Excel.");
+                return;
+            }
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', codepage: 65001 });
+
+                    if (!workbook.SheetNames.length) {
+                        alert("Erro ao ler a planilha. Verifique o formato do arquivo.");
+                        return;
+                    }
+
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+
+                    if (jsonData.length === 0) {
+                        alert("Nenhum dado encontrado na planilha.");
+                        return;
+                    }
+                    function formatDate(value) {
+                        if (value instanceof Date) {
+                            let day = value.getDate().toString().padStart(2, '0');
+                            let month = (value.getMonth() + 1).toString().padStart(2, '0');
+                            let year = value.getFullYear();
+                            return `${day}/${month}/${year}`;
+                        }
+                        return value;
+                    }
+                    jsonData = jsonData.map(row => {
+                        Object.keys(row).forEach(key => {
+                            if (row[key] instanceof Date || (typeof row[key] === "string" && row[key].includes("/"))) {
+                                let parsedDate = new Date(row[key]);
+                                if (!isNaN(parsedDate)) {
+                                    row[key] = formatDate(parsedDate);
+                                }
+                            }
+                        });
+                        return row;
+                    });
+                    const groupedData = {};
+                    jsonData.forEach(row => {
+                        const transportadora = row['Nome da Transportadora'];
+                        if (transportadora) {
+                            if (!groupedData[transportadora]) {
+                                groupedData[transportadora] = [];
+                            }
+                            groupedData[transportadora].push(row);
+                        }
+                    });
+
+                    if (Object.keys(groupedData).length === 0) {
+                        alert("Nenhuma transportadora encontrada na planilha.");
+                        return;
+                    }
+                    const newWorkbook = XLSX.utils.book_new();
+                    Object.keys(groupedData).forEach(name => {
+                        const ws = XLSX.utils.json_to_sheet(groupedData[name]);
+                        XLSX.utils.book_append_sheet(newWorkbook, ws, name.substring(0, 31));
+                    });
+                    XLSX.writeFile(newWorkbook, 'Planilha_Separada.xlsx');
+                } catch (error) {
+                    alert("Erro ao processar o arquivo: " + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+    </script>
+</body>
+</html>
