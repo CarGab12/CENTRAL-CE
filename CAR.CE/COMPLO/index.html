@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparador de Prazo de Entrega</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1 class="mb-4">Comparador de Prazo de Entrega</h1>
+
+    <div class="mb-3">
+      <label class="form-label">Importar CSV de Notas</label>
+      <input type="file" class="form-control" id="csvNotas" accept=".csv" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Importar XLSX de Prazos</label>
+      <input type="file" class="form-control" id="xlsxPrazos" accept=".xlsx,.xls" />
+    </div>
+
+    <button class="btn btn-primary" onclick="processarArquivos()">Calcular Prazos</button>
+
+    <div class="mt-5">
+      <h3>Resultados</h3>
+      <div class="table-responsive">
+        <table class="table table-bordered" id="tabelaResultados">
+          <thead>
+            <tr>
+              <th>Chave de Acesso</th>
+              <th>Transportadora</th>
+              <th>IBGE Origem</th>
+              <th>IBGE Destino</th>
+              <th>Data Embarque</th>
+              <th>Dias Úteis</th>
+              <th>Data Estimada de Entrega</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let dadosNotas = [];
+    let planilhasPrazos = {};
+
+    function processarArquivos() {
+  const csvFile = document.getElementById('csvNotas').files[0];
+  const xlsxFile = document.getElementById('xlsxPrazos').files[0];
+
+  if (!csvFile || !xlsxFile) {
+    alert('Por favor, selecione os dois arquivos.');
+    return;
+  }
+
+  Papa.parse(csvFile, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function (results) {
+      dadosNotas = results.data;
+      console.log("Dados CSV carregados:", dadosNotas); // Adicionando log para verificar a estrutura dos dados CSV
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const workbook = XLSX.read(e.target.result, { type: 'binary' });
+        workbook.SheetNames.forEach(sheetName => {
+          const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+          planilhasPrazos[sheetName] = data;
+        });
+        console.log("Planilhas XLSX carregadas:", planilhasPrazos);
+        calcularPrazos();
+      };
+      reader.readAsBinaryString(xlsxFile);
+    }
+  });
+}
+
+function calcularPrazos() {
+  const tabela = document.querySelector('#tabelaResultados tbody');
+  tabela.innerHTML = '';
+  console.log('Iniciando cálculo dos prazos...');
+
+  dadosNotas.forEach(nota => {
+    // Adicionando logs para verificar o que está sendo acessado
+    console.log("Nota atual:", nota);
+
+    // Usando chaves diretas para acessar as colunas. Certifique-se de que o nome da chave corresponde exatamente ao do CSV
+    const chave = nota['NÃºmero da NF']; // Verifique se esse nome corresponde exatamente ao do CSV
+    const transportadora = nota['nome da transportadora']; // Verifique o nome da coluna exato
+    const ibgeDestino = nota['IBGE destino']; // Verifique o nome da coluna exato
+    const ibgeOrigem = nota['IBGE origem']; // Verifique o nome da coluna exato
+    const embarqueStr = nota['Data de embarque']; // Verifique o nome da coluna exato
+
+    console.log(`Processando nota: ${chave}, Transportadora: ${transportadora}, IBGE Origem: ${ibgeOrigem}, IBGE Destino: ${ibgeDestino}`);
+
+    let diasUteis = null;
+
+    // Procura pela planilha correspondente aos dados de prazos
+    for (let aba in planilhasPrazos) {
+      const abaData = planilhasPrazos[aba];
+      console.log(`Procurando em aba: ${aba}`);
+
+      const temOrigemTransportadora = abaData.some(row => {
+        const transportadoraNaPlanilha = row['TRANSPORTADORA']; // Certifique-se de que esse nome corresponda ao da planilha XLSX
+        return row['IBGE ORIGEM'] == ibgeOrigem && transportadoraNaPlanilha && transportadoraNaPlanilha.toLowerCase().trim() === transportadora.toLowerCase().trim();
+      });
+
+      if (temOrigemTransportadora) {
+        const linhaPrazo = abaData.find(row => row['IBGE DESTINO'] == ibgeDestino);
+        if (linhaPrazo) {
+          diasUteis = parseInt(linhaPrazo['Prazo']); // Verifique o nome correto da coluna
+          console.log(`Prazo encontrado: ${diasUteis} dias`);
+          break;
+        }
+      }
+    }
+
+    const dataEntrega = diasUteis ? somarDiasUteis(embarqueStr, diasUteis) : 'N/A';
+
+    const linha = `
+      <tr>
+        <td>${chave ?? 'N/A'}</td>
+        <td>${transportadora ?? 'N/A'}</td>
+        <td>${ibgeOrigem ?? 'N/A'}</td>
+        <td>${ibgeDestino ?? 'N/A'}</td>
+        <td>${embarqueStr ?? 'N/A'}</td>
+        <td>${diasUteis ?? 'N/A'}</td>
+        <td>${dataEntrega}</td>
+      </tr>`;
+    tabela.innerHTML += linha;
+  });
+}
+
+
+
+
+    function somarDiasUteis(dataStr, dias) {
+      const partes = dataStr.split('/');
+      const data = new Date(partes[2], partes[1] - 1, partes[0]);
+      let adicionados = 0;
+
+      while (adicionados < dias) {
+        data.setDate(data.getDate() + 1);
+        const dia = data.getDay();
+        if (dia !== 0 && dia !== 6) {
+          adicionados++;
+        }
+      }
+
+      return data.toLocaleDateString('pt-BR');
+    }
+  </script>
+</body>
+</html>

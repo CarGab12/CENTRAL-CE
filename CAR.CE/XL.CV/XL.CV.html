@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversor XLSX para CSV e CSV para XLSX</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    header {
+      background-color: #007BFF;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+
+    footer {
+      background-color: #007BFF;
+      color: aliceblue;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    footer p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    main {
+      padding: 20px;
+      margin-bottom: 50px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 600px;
+    }
+
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    input[type="file"] {
+      margin-top: 10px;
+    }
+
+    a {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      font-size: 16px;
+      text-decoration: none;
+      color: #007BFF;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .toggle-btn {
+      display: block;
+      margin: 30px auto;
+      background-color: #28a745;
+    }
+
+    .toggle-btn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>XL - CV</h1>
+  </header>
+
+  <main>
+    <div class="container">
+      <div id="xlsx-to-csv" class="conversor">
+        <h2>Converter XLSX para CSV</h2>
+        <input type="file" id="xlsx-file" class="form-control" />
+        <button class="btn btn-primary" onclick="convertXLSXtoCSV()">Converter para CSV</button>
+        <a id="download-csv" class="d-none" download="arquivo.csv">Baixar CSV</a>
+      </div>
+
+      <hr>
+
+      <div id="csv-to-xlsx" class="conversor d-none">
+        <h2>Converter CSV para XLSX</h2>
+        <input type="file" id="csv-file" class="form-control" />
+        <button class="btn btn-primary" onclick="convertCSVtoXLSX()">Converter para XLSX</button>
+        <a id="download-xlsx" class="d-none" download="arquivo.xlsx">Baixar XLSX</a>
+      </div>
+
+      <button class="btn btn-success toggle-btn" onclick="toggleConverter()">Alternar Conversor</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>Feito pelo Carlos</p>
+    <p>O mesmo que está na sua frente ou do seu lado</p>
+  </footer>
+
+  <script>
+    function convertXLSXtoCSV() {
+      const fileInput = document.getElementById('xlsx-file');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Por favor, selecione um arquivo XLSX primeiro!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const csv = XLSX.utils.sheet_to_csv(worksheet);
+
+        const link = document.getElementById('download-csv');
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        link.classList.remove('d-none');
+        link.textContent = 'Baixar CSV';
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    function convertCSVtoXLSX() {
+      const fileInput = document.getElementById('csv-file');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Por favor, selecione um arquivo CSV primeiro!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = e.target.result;
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.aoa_to_sheet(CSVtoArray(data));
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+        const link = document.getElementById('download-xlsx');
+        const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
+        link.href = URL.createObjectURL(new Blob([s2ab(xlsxData)], { type: 'application/octet-stream' }));
+        link.classList.remove('d-none');
+        link.textContent = 'Baixar XLSX';
+      };
+      reader.readAsText(file);
+    }
+    function CSVtoArray(strData) {
+      const arrData = [];
+      const strDelimiter = ',';
+      const rows = strData.split('\n');
+
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].split(strDelimiter);
+        arrData.push(cells);
+      }
+      return arrData;
+    }
+    function s2ab(s) {
+      const buf = new ArrayBuffer(s.length);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i < s.length; i++) {
+        view[i] = s.charCodeAt(i) & 0xFF;
+      }
+      return buf;
+    }
+    function toggleConverter() {
+      const xlsxToCsvSection = document.getElementById('xlsx-to-csv');
+      const csvToXlsxSection = document.getElementById('csv-to-xlsx');
+
+      xlsxToCsvSection.classList.toggle('d-none');
+      csvToXlsxSection.classList.toggle('d-none');
+    }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

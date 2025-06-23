@@ -1,32 +1,4 @@
 
-.output-column {
-    margin-bottom: 20px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    background-color: #f9f9f9;
-}
-
-.output-column p {
-    margin: 0;
-    font-size: 14px;
-}
-
-.copied {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    box-shadow: 0 2px 5px rgba(0, 255, 0, 0.3);
-}
-
-.btn-copy {
-    width: 100%;
-    margin-top: 10px;
-}
-
-#output {
-    margin-top: 20px;
-}
 
 header {
     background-color: #007BFF;
